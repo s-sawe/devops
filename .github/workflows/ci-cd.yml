@@ -22,6 +22,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r ecommerce/requirements.txt
+          pip install -r store/requirements.txt
 
       - name: Run migrations & tests
         env:
@@ -37,7 +38,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      - name: Build Ecommerce Docker image
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         run: |
@@ -45,21 +46,38 @@ jobs:
             echo "ERROR: DOCKER_USERNAME secret is missing!"
             exit 1
           fi
-          docker build -t $DOCKER_USERNAME/ecommerce-app:${GITHUB_SHA::7} -f ecommerce/Dockerfile .
+          docker build -t $DOCKER_USERNAME/ecommerce-app:${GITHUB_SHA::7} -f ecommerce/Dockerfile ./ecommerce
           docker tag $DOCKER_USERNAME/ecommerce-app:${GITHUB_SHA::7} $DOCKER_USERNAME/ecommerce-app:latest
+
+      - name: Build Store Docker image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          docker build -t $DOCKER_USERNAME/store-app:${GITHUB_SHA::7} -f store/Dockerfile ./store
+          docker tag $DOCKER_USERNAME/store-app:${GITHUB_SHA::7} $DOCKER_USERNAME/store-app:latest
 
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Push images
+      - name: Push Ecommerce image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:${GITHUB_SHA::7}
           docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
 
-      - name: Run Trivy scan
+      - name: Push Store image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/store-app:${GITHUB_SHA::7}
+          docker push ${{ secrets.DOCKER_USERNAME }}/store-app:latest
+
+      - name: Run Trivy scan on Ecommerce
         uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
+
+      - name: Run Trivy scan on Store
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/store-app:latest
 
   deploy_to_ec2:
     needs: build_and_scan
@@ -74,14 +92,21 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to EC2 (pull & restart Docker)
+      - name: Deploy apps to EC2
         env:
           DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            # Ecommerce
             docker pull $DOCKER_USER/ecommerce-app:latest
             docker stop ecommerce-app || true
             docker rm ecommerce-app || true
             docker run -d --name ecommerce-app -p 8000:8000 --env-file /home/${{ secrets.SSH_USER }}/ecommerce/.env $DOCKER_USER/ecommerce-app:latest
+
+            # Store
+            docker pull $DOCKER_USER/store-app:latest
+            docker stop store-app || true
+            docker rm store-app || true
+            docker run -d --name store-app -p 8001:8001 --env-file /home/${{ secrets.SSH_USER }}/store/.env $DOCKER_USER/store-app:latest
             exit
           EOF
