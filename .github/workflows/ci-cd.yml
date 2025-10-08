@@ -53,7 +53,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
 
       - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@aster
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
 
