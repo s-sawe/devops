@@ -16,3 +16,7 @@
 
 ## Monitoring
 - Start Prometheus & Grafana: `cd monitoring && docker compose -f docker-compose.monitor.yml up -d`
+
+## Live Endpoints
+- http://51.20.121.132:8000/products --> Fetches All Products
+- http://51.20.121.132:8000/products/1 --> Fetches a single product
