@@ -20,3 +20,6 @@
 ## Live Endpoints
 - http://51.20.121.132:8000/products --> Fetches All Products
 - http://51.20.121.132:8000/products/1 --> Fetches a single product
+
+## Architecture Diagram
+![Architecture](docs/architecture.png)
