@@ -1,6 +1,6 @@
 # E-Commerce (Django) — DevOps Pipeline
 
-## 🚀 Project Overview  
+## Project Overview  
 This project demonstrates a complete **DevOps pipeline** for a Django-based e-commerce web application — covering **containerization**, **infrastructure automation**, **continuous integration and deployment**, **monitoring**, and **DevSecOps** practices.
 
 ## Key Components
