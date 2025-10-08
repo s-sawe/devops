@@ -110,4 +110,6 @@ jobs:
             docker stop store-app || true
             docker rm store-app || true
             docker run -d --name store-app -p 8001:8001 --env-file /home/ec2-user/store/.env $DOCKER_USER/store-app:latest
+
+            exit
           EOF
